@@ -1,3 +1,8 @@
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from matplotlib import pyplot as plt
+from csv import DictReader
+from os.path import join, exists
+from os import makedirs
 import cv2
 import numpy as np
 import time
@@ -5,10 +10,6 @@ import os
 import mediapipe as mp
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
-from os import makedirs
-from os.path import join, exists
-from csv import DictReader
-from matplotlib import pyplot as plt
 
 mp_hands = mp.solutions.hands
 
@@ -16,7 +17,7 @@ mp_hands = mp.solutions.hands
         FONCTION DE MODIFICATION DU SON WINDOWS
 
 '''
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+
 
 def set_master_volume(volume):
     from comtypes import CLSCTX_ALL
@@ -24,16 +25,15 @@ def set_master_volume(volume):
     interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
     volume_object = interface.QueryInterface(IAudioEndpointVolume)
     volume_object.SetMasterVolumeLevelScalar(volume, None)
-    
+
+
 def get_master_volume():
     from comtypes import CLSCTX_ALL
     devices = AudioUtilities.GetSpeakers()
     interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
     volume_object = interface.QueryInterface(IAudioEndpointVolume)
     return volume_object.GetMasterVolumeLevelScalar()
-    
-    
-    
+
 
 def lm_extraction(hands_res):
     '''
@@ -57,15 +57,15 @@ def lm_extraction(hands_res):
     return hand_lm
 
 
-def lm_drawing (image,hand_resultats):
+def lm_drawing(image, hand_resultats):
     for hand_landmarks in hand_resultats.multi_hand_landmarks:
-                #printing des landmarks sur l'image
-                mp_drawing.draw_landmarks(image,hand_landmarks, mp_hands.HAND_CONNECTIONS,
-                                          landmark_drawing_spec=mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2, circle_radius=1),
-                                          connection_drawing_spec=mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2, circle_radius=2)
-                                         )
-
-
+        # printing des landmarks sur l'image
+        mp_drawing.draw_landmarks(image, hand_landmarks, mp_hands.HAND_CONNECTIONS,
+                                  landmark_drawing_spec=mp_drawing.DrawingSpec(
+                                      color=(0, 0, 255), thickness=2, circle_radius=1),
+                                  connection_drawing_spec=mp_drawing.DrawingSpec(
+                                      color=(255, 0, 0), thickness=2, circle_radius=2)
+                                  )
 
 
 def angle_process(hand_lm):
@@ -101,24 +101,23 @@ def angle_process(hand_lm):
     for b, p1, p2 in vect:
         vec1 = hand_lm[p1] - hand_lm[b]
         vec2 = hand_lm[p2] - hand_lm[b]
-        angle.append(np.arccos(np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))))
+        angle.append(np.arccos(np.dot(vec1, vec2) /
+                     (np.linalg.norm(vec1) * np.linalg.norm(vec2))))
     angle = np.array(angle)
     return angle
 
 
-
-
 def distance_process(lm):
-    dist=np.zeros((21))
+    dist = np.zeros((21))
     # ditance de la pomme
     p1 = 9
     p2 = 0
     dist[0] = np.linalg.norm(lm[p1] - lm[p2])
 
-    #pouce  (p1=4  p2=2)
-    p1=4
-    p2=2
-    dist[1]=np.linalg.norm(lm[p1] - lm[p2])
+    # pouce  (p1=4  p2=2)
+    p1 = 4
+    p2 = 2
+    dist[1] = np.linalg.norm(lm[p1] - lm[p2])
 
     # index  (p1=8  p2=5)
     p1 = 8
@@ -140,11 +139,10 @@ def distance_process(lm):
     p2 = 17
     dist[5] = np.linalg.norm(lm[p1] - lm[p2])
 
-
-    #DISTANCE ENTRE LES DOIGTS
-    #liens au pouce (p1=4)
-    p1=4
-    p2=8
+    # DISTANCE ENTRE LES DOIGTS
+    # liens au pouce (p1=4)
+    p1 = 4
+    p2 = 8
     dist[6] = np.linalg.norm(lm[p1] - lm[p2])
     p2 = 12
     dist[7] = np.linalg.norm(lm[p1] - lm[p2])
@@ -156,7 +154,7 @@ def distance_process(lm):
     dist[10] = np.linalg.norm(lm[p1] - lm[p2])
 
     # liens a l'index (p1=8)
-    p1=8
+    p1 = 8
     p2 = 12
     dist[11] = np.linalg.norm(lm[p1] - lm[p2])
     p2 = 16
@@ -167,7 +165,7 @@ def distance_process(lm):
     dist[14] = np.linalg.norm(lm[p1] - lm[p2])
 
     # liens au majeur (p1=12)
-    p1=12
+    p1 = 12
     p2 = 16
     dist[15] = np.linalg.norm(lm[p1] - lm[p2])
     p2 = 20
@@ -194,34 +192,38 @@ def save_lm(lm, folder):
 
     if not os.path.exists(folder):
         os.makedirs(folder)
-    file_list = [f for f in os.listdir(folder) if f.startswith("lm_") and f.endswith(".npy")]
+    file_list = [f for f in os.listdir(
+        folder) if f.startswith("lm_") and f.endswith(".npy")]
     file_count = len(file_list)
     filename = folder + "/lm_" + str(file_count) + ".npy"
     np.save(filename, lm)
     return 0
 
+
 def load_lm(folder):
-    file_list = [f for f in os.listdir(folder) if (f.startswith("lm_") or f.startswith("data_") ) and f.endswith(".npy")]
+    file_list = [f for f in os.listdir(folder) if (f.startswith(
+        "lm_") or f.startswith("data_")) and f.endswith(".npy")]
     file_list.sort()
     data = [np.load(folder + "/" + f) for f in file_list]
     return data
 
 
-def proba_viz(vect_prob,image):
+def proba_viz(vect_prob, image):
     import csv
     with open('./classe.csv') as mon_fichier:
-        mon_fichier_reader = csv.reader(mon_fichier, delimiter=',', quotechar='"')
+        mon_fichier_reader = csv.reader(
+            mon_fichier, delimiter=',', quotechar='"')
         classe_list = [x for x in mon_fichier_reader]
-    classe_list=classe_list[0]
-        
-    for idx,prob in enumerate(vect_prob) :
-        cv2.rectangle(image, (0,idx*25), (1+int(200*1),25+idx*25), (15,15,15), -1)
-        cv2.rectangle(image, (0,idx*25), (1+int(200*prob),25+idx*25), (80,130,80), -1)
-        cv2.putText(image, str( classe_list[idx] )+' : '+str(round(prob,2)), org=(0,20+idx*25), fontFace=cv2.FONT_HERSHEY_SIMPLEX ,
-                                      fontScale=0.6, color=(255,255,255), thickness=1)
-        
-        
-        
+    classe_list = classe_list[0]
+
+    for idx, prob in enumerate(vect_prob):
+        cv2.rectangle(image, (0, idx*25),
+                      (1+int(200*1), 25+idx*25), (15, 15, 15), -1)
+        cv2.rectangle(image, (0, idx*25), (1+int(200*prob),
+                      25+idx*25), (80, 130, 80), -1)
+        cv2.putText(image, str(classe_list[idx])+' : '+str(round(prob, 2)), org=(0, 20+idx*25), fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                    fontScale=0.6, color=(255, 255, 255), thickness=1)
+
 
 def plot_log(filename, show=None):
     """ Plot log of training / validation learning curve
@@ -245,7 +247,7 @@ def plot_log(filename, show=None):
         values = np.reshape(values, newshape=(-1, len(keys)))
         values[:, idx] += 1
     # Plot
-    fig = plt.figure(figsize=(8,6))
+    fig = plt.figure(figsize=(8, 6))
     fig.subplots_adjust(top=0.95, bottom=0.05, right=0.95)
     fig.add_subplot(211)
     for i, key in enumerate(keys):
