@@ -1,0 +1,8 @@
+comtypes==1.4.5
+matplotlib==3.9.1
+mediapipe==0.10.14
+numpy==2.0.1
+opencv_contrib_python==4.10.0.82
+opencv_python==4.10.0.82
+pycaw==20240210
+tensorflow==2.17.0
